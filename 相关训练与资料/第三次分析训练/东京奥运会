@@ -1,0 +1,58 @@
+-----
+import pandas as pd
+
+
+df1 = pd.read_csv("东京奥运会奖牌数据.csv")  # 如果未联网可以使用这条命令加载数据
+df2 = pd.read_csv("东京奥运会奖牌分日数据.csv")
+-----
+df1.rename(columns={'Unnamed: 2':'金牌数',
+                  'Unnamed: 3':'银牌数',
+                  'Unnamed: 4':'铜牌数'},inplace=True) 
+-----
+df2.info()
+-----
+df2['获奖时间'] = pd.to_datetime(df2['获奖时间'])
+-----
+df2 = df2.sort_values(by=['获奖时间','奖牌类型'], ascending=True, ignore_index=True)
+-----
+temp = pd.merge(df1,df2,on = '国家id') #先合并
+temp['获奖时间'] = pd.to_datetime(temp['获奖时间'])#修改类型
+temp = temp.sort_values(by=['获奖时间','奖牌类型'], ascending=True, ignore_index=True)#排序，和df2一样
+df2['国家'] = temp['国家奥委会']#赋值
+-----
+df2.groupby("国家")['奖牌类型'].count().sort_values(ascending=False).head(5)
+-----
+df2['运动员'].value_counts().sort_values(ascending=False).head(5)
+
+
+-----
+df2[df2['运动类别'] == '乒乓球']
+-----
+result = pd.pivot_table(df2,values = ['奖牌类型'],index = ['国家','运动类别'],aggfunc = 'count')
+-----
+result.query("国家 == ['中国']")
+-----
+(result.query("国家 == ['中国']")
+.style
+.bar(subset=['奖牌类型'],color='skyblue'))
+-----
+def time_format(x):
+    
+    return x.strftime("%m月%d日")
+
+df2['获奖时间'] = df2['获奖时间'].map(time_format)
+-----
+df2.groupby("获奖时间")['国家'].count().sort_values()
+-----
+pd.pivot_table(df2,values = ['奖牌类型'],index = ['运动类别','国家'],aggfunc = 'count')
+-----
+pd.pivot_table(df2,values = ['奖牌类型'],index = ['获奖时间','国家'],aggfunc = 'count').query("国家 == ['中国']").cumsum()
+-----
+data = pd.pivot_table(df2,values = ['奖牌类型'],index = ['获奖时间','国家'],aggfunc = 'count').query("国家 == ['美国', '中国', '日本', '英国', 'ROC', '澳大利亚', '荷兰', '法国', '德国', '意大利']")
+data = data.unstack()
+data.columns = data.columns.get_level_values(1)
+data.columns.name = None
+data = data.cumsum()
+data = data.fillna(axis=0,method='ffill').fillna(0)
+data
+-----
